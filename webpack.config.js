@@ -1,51 +1,81 @@
-var webpack = require("webpack"),
-    path = require("path"),
-    fileSystem = require("fs"),
-    env = require("./utils/env"),
-    CleanWebpackPlugin = require("clean-webpack-plugin"),
-    CopyWebpackPlugin = require("copy-webpack-plugin"),
-    HtmlWebpackPlugin = require("html-webpack-plugin"),
-    WriteFilePlugin = require("write-file-webpack-plugin");
+const webpack = require('webpack'),
+    path = require('path'),
+    fileSystem = require('fs'),
+    env = require('./utils/env'),
+    CleanWebpackPlugin = require('clean-webpack-plugin'),
+    CopyWebpackPlugin = require('copy-webpack-plugin'),
+    HtmlWebpackPlugin = require('html-webpack-plugin'),
+    WriteFilePlugin = require('write-file-webpack-plugin'),
+    ExtractTextPlugin = require('extract-text-webpack-plugin'),
+    Critters = require('critters-webpack-plugin');
 
 // load the secrets
-var alias = {};
+const alias = {};
 
-var secretsPath = path.join(__dirname, ("secrets." + env.NODE_ENV + ".js"));
+const secretsPath = path.join(__dirname, ('secrets.' + env.NODE_ENV + '.js'));
 
-var fileExtensions = ["jpg", "jpeg", "png", "gif", "eot", "otf", "svg", "ttf", "woff", "woff2"];
+const fileExtensions = ['jpg', 'jpeg', 'png', 'gif', 'eot', 'otf', 'svg', 'ttf', 'woff', 'woff2'];
 
 if (fileSystem.existsSync(secretsPath)) {
-  alias["secrets"] = secretsPath;
+  alias['secrets'] = secretsPath;
 }
 
-var options = {
-  mode: process.env.NODE_ENV || "development",
+const options = {
+  mode: process.env.NODE_ENV || 'development',
   entry: {
-    popup: path.join(__dirname, "src", "js", "popup.js"),
-    options: path.join(__dirname, "src", "js", "options.js"),
-    background: path.join(__dirname, "src", "js", "background.js")
+    background: path.join(__dirname, 'src', 'js', 'background.js'),
+    content: path.join(__dirname, 'src', 'js', 'content.js'),
+  },
+  chromeExtensionBoilerplate: {
+    notHotReload: ['background.js', 'content.js'],
   },
   output: {
-    path: path.join(__dirname, "build"),
-    filename: "[name].bundle.js"
+    path: path.join(__dirname, 'build'),
+    filename: '[name].bundle.js'
   },
   module: {
     rules: [
       {
-        test: /\.css$/,
-        loader: "style-loader!css-loader",
-        exclude: /node_modules/
+        test: /\.scss$/,
+        use: ExtractTextPlugin.extract({
+          fallback: 'style-loader',
+          use: [
+            'css-loader',
+            'sass-loader'
+          ],
+        })
       },
+      // {
+      //   test: /\.css$/,
+      //   loader: 'style-loader!css-loader',
+      //   exclude: /node_modules/
+      // },
       {
         test: new RegExp('\.(' + fileExtensions.join('|') + ')$'),
-        loader: "file-loader?name=[name].[ext]",
+        loader: 'file-loader?name=[name].[ext]',
         exclude: /node_modules/
       },
       {
         test: /\.html$/,
-        loader: "html-loader",
+        loader: 'html-loader',
         exclude: /node_modules/
-      }
+      },
+      {
+        test: /\.svg$/,
+        loader: 'svg-inline-loader'
+      },
+      {
+        test: /\.(woff(2)?|ttf|eot|svg)(\?v=\d+\.\d+\.\d+)?$/,
+        use: [
+          {
+            loader: 'file-loader',
+            options: {
+              name: '[name].[ext]',
+              outputPath: 'fonts/',
+            }
+          }
+        ]
+      },
     ]
   },
   resolve: {
@@ -53,41 +83,43 @@ var options = {
   },
   plugins: [
     // clean the build folder
-    new CleanWebpackPlugin(["build"]),
+    new CleanWebpackPlugin(['build']),
     // expose and write the allowed env vars on the compiled bundle
-    new webpack.EnvironmentPlugin(["NODE_ENV"]),
-    new CopyWebpackPlugin([{
-      from: "src/manifest.json",
-      transform: function (content, path) {
-        // generates the manifest file using the package.json informations
-        return Buffer.from(JSON.stringify({
-          description: process.env.npm_package_description,
-          version: process.env.npm_package_version,
-          ...JSON.parse(content.toString())
-        }))
+    new webpack.EnvironmentPlugin(['NODE_ENV']),
+    new ExtractTextPlugin('css/global.css'),
+    new CopyWebpackPlugin([
+      {
+        from: 'src/manifest.json',
+        transform: function (content, path) {
+          // generates the manifest file using the package.json informations
+          return Buffer.from(JSON.stringify({
+            description: process.env.npm_package_description,
+            version: process.env.npm_package_version,
+            ...JSON.parse(content.toString())
+          }))
+        }
+      },
+      {
+        from: 'src/img',
       }
-    }]),
+    ]),
     new HtmlWebpackPlugin({
-      template: path.join(__dirname, "src", "popup.html"),
-      filename: "popup.html",
-      chunks: ["popup"]
+      template: path.join(__dirname, 'src', 'background.html'),
+      filename: 'background.html',
+      chunks: ['background']
     }),
     new HtmlWebpackPlugin({
-      template: path.join(__dirname, "src", "options.html"),
-      filename: "options.html",
-      chunks: ["options"]
+      template: path.join(__dirname, 'src', 'chat-window.html'),
+      filename: 'chat-window.html',
+      chunks: ['chat-window']
     }),
-    new HtmlWebpackPlugin({
-      template: path.join(__dirname, "src", "background.html"),
-      filename: "background.html",
-      chunks: ["background"]
-    }),
-    new WriteFilePlugin()
+    new WriteFilePlugin(),
+    new Critters({}),
   ]
 };
 
-if (env.NODE_ENV === "development") {
-  options.devtool = "cheap-module-eval-source-map";
+if (env.NODE_ENV === 'development') {
+  options.devtool = 'cheap-module-eval-source-map';
 }
 
 module.exports = options;

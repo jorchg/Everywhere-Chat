@@ -1,16 +1,29 @@
 {
-  "name": "Chrome Extension Webpack",
-  "options_page": "options.html",
-  "background": {
-    "page": "background.html"
-  },
-  "browser_action": {
-    "default_popup": "popup.html",
-    "default_icon": "icon-34.png"
-  },
+  "name": "Chat Everywhere",
+  "description": "Add a chat to every page, where the room is the page where you are",
+  "version": "1.0.0",
+  "author": "jorchg",
   "icons": {
     "128": "icon-128.png"
   },
+  "background": {
+    "scripts": ["background.bundle.js"]
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.microsiervos.com/*"],
+      "run_at": "document_idle",
+      "js": ["content.bundle.js"]
+    }
+  ],
+  "permissions": [
+    "tabs",
+    "storage"
+  ],
+  "web_accessible_resources": [
+    "chat-window.html",
+    "css/global.css"
+  ],
   "manifest_version": 2,
   "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'"
 }
