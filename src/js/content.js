@@ -1,5 +1,6 @@
 import Dom from './helpers/dom';
 import ChatWindowDom from './helpers/chat-window-dom';
+import Firebase from './helpers/firebase';
 
 import '../css/global.scss';
 
@@ -7,6 +8,7 @@ import '../css/global.scss';
   class Content {
     constructor() {
       this.create();
+      this.firebase = new Firebase();
     }
 
     async create() {

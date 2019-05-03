@@ -18,10 +18,9 @@ $family-sans-serif: "Nunito", sans-serif;
 @import "../../node_modules/bulma/sass/elements/button.sass";
 @import "../../node_modules/bulma/sass/elements/container.sass";
 @import "../../node_modules/bulma/sass/elements/form.sass";
-@import "../../node_modules/bulma/sass/elements/title.sass";
 @import "../../node_modules/bulma/sass/components/navbar.sass";
-@import "../../node_modules/bulma/sass/layout/hero.sass";
-@import "../../node_modules/bulma/sass/layout/section.sass";
+@import "../../node_modules/bulma/sass/components/panel.sass";
+@import "../../node_modules/bulma/sass/elements/notification.sass";
 
 // Other sass files
 @import "./chat-everywhere.scss";

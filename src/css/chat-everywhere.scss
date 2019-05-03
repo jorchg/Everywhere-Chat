@@ -1,13 +1,15 @@
-* {
+div, p, span, h1, h2, h3, h4, h5, h6 {
   font-family: $family-sans-serif;
 }
 
 .chat-everywhere.chat-window {
   display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   background-color: $beige-lighter;
   width: 340px;
   box-sizing: border-box;
-  padding-bottom: 30px;
+  padding-bottom: 20px;
   padding-top: 64px;
   position: fixed;
   z-index: 1000000002;
@@ -89,7 +91,7 @@
     }
   }
 
-  div.control.message-input {
+  .message-input {
     width: 100%;
     position: relative;
     align-self: flex-end;
@@ -99,6 +101,38 @@
       justify-content: flex-end;
       margin-top: 5px;
     }
+  }
+
+  .message-area {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: calc(100% - 52px);
+    padding-bottom: 20px;
+    
+    nav.panel {
+      flex-direction: column;
+      justify-content: flex-end;
+      display: flex;
+      overflow-y: scroll;
+      height: 100%;
+
+      .panel-block {
+        font-size: 12px;
+      }
+    }
+  }
+
+  .notification {
+    text-align: center;
+  }
+
+  .delete-notification {
+    width: 10px;
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    cursor: pointer;
   }
 }
 
