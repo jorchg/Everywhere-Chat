@@ -1,13 +1,50 @@
-import * as firebase from 'firebase/app';
-import * as config from '../../../config/index';
-
-// Add the Firebase products that you want to use
-import 'firebase/auth';
-import 'firebase/firestore';
-
 export default class Firebase {
   constructor() {
-    firebase.initializeApp(config.firebase);
-    return firebase;
+
+  }
+
+  async signInAnon() {
+    return new Promise((fulfill, reject) => {
+      chrome.runtime.sendMessage({
+        contentScriptQuery: 'signInAnon',
+      }, response => {
+        if (!response) return reject(new Error('Operation invalid'));
+        return fulfill(response);
+      });
+    });
+  }
+
+  async updateUserDisplayName(displayName = '') {
+    return new Promise((fulfill, reject) => {
+      chrome.runtime.sendMessage({
+        contentScriptQuery: 'updateUserDisplayName',
+        displayName,
+      }, response => {
+        if (!response) return reject(new Error('Operation invalid'));
+        return fulfill(response);
+      })
+    });
+  }
+
+  getCurrentUser() {
+    return new Promise((fulfill, reject) => {
+      chrome.runtime.sendMessage({
+        contentScriptQuery: 'getCurrentUser',
+      }, response => {
+        if (!response) return fulfill(null);
+        if (response.user) return fulfill(response.user);
+      });
+    });
+  }
+
+  async signOut() {
+    return new Promise((fulfill, reject) => {
+      chrome.runtime.sendMessage({
+        contentScriptQuery: 'signOut',
+      }, response => {
+        if (response.error) return reject(new Error('Operation invalid'));
+        return fulfill(true);
+      });
+    });
   }
 }

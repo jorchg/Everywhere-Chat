@@ -1,9 +1,12 @@
 import throttle from 'lodash/throttle';
 import Dom from './dom';
+import Firebase from './firebase';
 
 export default class ChatWindowDom extends Dom {
-  constructor(html, domain) {
+  constructor(html, domain, firebaseUser) {
     super();
+    this.firebaseUser = firebaseUser;
+    this.firebase = new Firebase();
     this.html = html;
     this.currentDomain = domain;
     this.globalDom = new Dom(document.querySelector('html'));
@@ -12,6 +15,7 @@ export default class ChatWindowDom extends Dom {
     this.textArea = this.html.querySelector('#text-message-input');
     this.controlMessageInput = this.html.querySelector('.control.message-input');
     this.sendButton = this.controlMessageInput.querySelector('a.button');
+    this.alert = this.html.querySelector('.notification-warning');
     this.init();
   }
 
@@ -26,9 +30,7 @@ export default class ChatWindowDom extends Dom {
     this.html
       .querySelector('.navbar-brand')
       .querySelector('span')
-      .textContent = this.currentDomain;
-
-    this.debugUsername();
+      .innerText = `Room: ${this.currentDomain}`;
 
     this.html
       .querySelector('#text-message-input')
@@ -37,11 +39,27 @@ export default class ChatWindowDom extends Dom {
       .querySelector('#text-message-input')
       .addEventListener('keypress', this.onKeyPressed.bind(this));
 
-    const username = await this.getUsername();
-    if (!username) {
+    const user = await this.getCurrentUser();
+    const { displayName, email } = user;
+    if (!displayName) {
       this.setChatDisabled({ reason: 'You must set a username first' });
     } else {
+      this.username = displayName;
+      this.html
+        .querySelector('.navbar-user')
+        .querySelector('span')
+        .innerText = `Logged in as: ${displayName}`;
       this.setChatEnabled();
+      if (!email) {
+        this.alert.innerHTML = `
+          Save your username by <strong>login in</strong>
+          <div class="form-wrap">
+            <input class="input email-input" type="text" placeholder="Email">
+            <a class="button is-primary">Login</a>
+          </div>
+        `;
+        this.alert.style.display = 'block';
+      }
     }
     this.sendButton.addEventListener('click', this.processTextArea.bind(this));
   }
@@ -64,22 +82,22 @@ export default class ChatWindowDom extends Dom {
     return this.globalDom.globalRightMargin = 0;
   }
 
-  setUsername(username = null) {
+  async setUsername(username = null) {
     if (!username) return false;
-    chrome.storage.sync.set({ 'everywhere-chat-username': username }, () => {
-      this.username = username;
-      return true;
-    });
+    try {
+      const response = await this.firebase.updateUserDisplayName(username);
+      this.username = response.displayName;
+    } catch (e) {
+      console.error('Error setting username: ', e);
+      return;
+    }
   }
 
-  async getUsername() {
-    return new Promise((fulfill, reject) => {
-      chrome.storage.sync.get(['everywhere-chat-username'], (result) => {
-        if (result['everywhere-chat-username']) {
-          this.username = result['everywhere-chat-username'];
-          return fulfill(result['everywhere-chat-username']);
-        }
-      });
+  async getCurrentUser() {
+    return new Promise(async (fulfill, reject) => {
+      const username = await this.firebase.getCurrentUser();
+      if (!username) return fulfill(null);
+      return fulfill(username);
     });
   }
 
@@ -90,10 +108,8 @@ export default class ChatWindowDom extends Dom {
   }
 
   setChatEnabled() {
-    const alert = this.html.querySelector('.notification-username');
-
     this.chatEnabled = true;
-    alert.remove();
+    this.alert.style.display = 'none';
     this.sendButton.innerText = 'Send';
     this.textArea.placeholder = 'Write a message...';
     this.textArea.setAttribute('maxlength', '600');
@@ -119,12 +135,12 @@ export default class ChatWindowDom extends Dom {
     this.addMessageToList(message, this.username);
   }
 
-  tryUsername(username = null) {
+  async tryUsername(username = null) {
     if (!username) return;
 
     // Do things
-    setTimeout(() => {
-      this.setUsername(username);
+    setTimeout(async () => {
+      await this.setUsername(username);
       this.controlMessageInput.classList.remove('is-loading');
       this.textArea.disabled = false;
       this.sendButton.removeAttribute('disabled');
@@ -186,9 +202,5 @@ export default class ChatWindowDom extends Dom {
       this.sendMessage(this.textArea.value);
       this.clearTextAreaOnEnter(event);
     }
-  }
-
-  debugUsername() {
-    return chrome.storage.sync.remove('everywhere-chat-username');
   }
 }

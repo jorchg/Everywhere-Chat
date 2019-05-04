@@ -8,10 +8,16 @@ import '../css/global.scss';
   class Content {
     constructor() {
       this.create();
-      this.firebase = new Firebase();
     }
-
+    
     async create() {
+      this.firebase = new Firebase();
+      try {
+        this.firebaseUser = await this.firebase.signInAnon();
+        console.log(this.firebaseUser);
+      } catch (e) {
+        this.firebaseUser = null;
+      }
       chrome.storage.local.get(['currentDomain'], async (result) => {
         this.currentDomain = result.currentDomain;
         const url = chrome.extension.getURL('chat-window.html');
@@ -40,7 +46,7 @@ import '../css/global.scss';
       `;
 
       const chatWindow = chatRoot.shadowRoot.querySelector('.chat-window');
-      this.chatWindowDom = new ChatWindowDom(chatWindow, this.currentDomain);
+      this.chatWindowDom = new ChatWindowDom(chatWindow, this.currentDomain, this.firebaseUser);
       return body.insertBefore(chatRoot, firstChild);
     }
 

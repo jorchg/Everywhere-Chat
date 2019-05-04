@@ -69,13 +69,28 @@ div, p, span, h1, h2, h3, h4, h5, h6 {
     padding-left: 10px;
     padding-right: 10px;
 
+    .navbar-wrap {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: space-evenly;
+      height: 100%;
+    }
+
     .navbar-brand {
+      min-height: auto;
       align-items: center;
       color: white;
+      font-size: 12px;
+    }
+
+    .navbar-user {
+      color: white;
+      font-size: 10px;
     }
 
     .navbar-start {
-      width: 100%;
       display: flex;
       justify-content: flex-end;
       align-items: center;
@@ -125,6 +140,22 @@ div, p, span, h1, h2, h3, h4, h5, h6 {
 
   .notification {
     text-align: center;
+
+    .form-wrap {
+      display: flex; 
+      align-items: baseline;
+
+      .email-input {
+        margin-top: 5px;
+        margin-right: 5px;
+        font-size: 12px;
+      }
+
+      .button {
+        font-size: 12px;
+      }
+    }
+
   }
 
   .delete-notification {
