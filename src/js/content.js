@@ -33,8 +33,10 @@ import '../css/global.scss';
             }
           } else {
             this.firebaseUser = user;
-            chrome.storage.local.get(['currentDomain'], async (result) => {
-              this.currentDomain = result.currentDomain;
+            chrome.runtime.sendMessage({
+              contentScriptQuery: 'getCurrentDomain',
+            }, async (response) => {
+              this.currentDomain = response.currentDomain;
               const url = chrome.extension.getURL('chat-window.html');
               const cssUrl = chrome.extension.getURL('css/global.css');
               const chatWindowHtml = await this.getHTML(url);

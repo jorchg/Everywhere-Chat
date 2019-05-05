@@ -47,31 +47,38 @@ function checkEmailLink(email, emailLink) {
   }
 }
 
+let currentDomain = {};
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   chrome.tabs.query({
     active: true,
     currentWindow: true
   }, ([currentTab]) => {
     if (currentTab && currentTab.url) {
+      currentDomain[`currentDomain-${currentTab.id}`] = (new URL(currentTab.url)).hostname;
       const url = new URL(currentTab.url);
       const search = url.search;
       if (currentTab.url.includes(domain) && (currentTab.status === 'complete') && (search.includes('action=confirm'))) {
-        console.log('currentTab: ', currentTab);
         chrome.storage.sync.get(['emailForSignin'], async (result) => {
           checkEmailLink(result.emailForSignin, currentTab.url);
         });
       }
   
-      chrome.storage.local.set({
-        currentTab: JSON.stringify(currentTab),
-        currentDomain: (new URL(currentTab.url)).hostname,
-      });
+      const currentTabKey = `currentTab-${currentTab.id}`;
+      const currentDomainKey = `currentDomain-${currentTab.id}`;
+      const toSave = {};
+      toSave[currentTabKey] = JSON.stringify(currentTab);
+      toSave[currentDomainKey] = (new URL(currentTab.url)).hostname,
+      chrome.storage.local.set(toSave);
     }
   });
 });
 
 chrome.runtime.onMessage.addListener(
   (request, sender, sendResponse) => {
+    if (request.contentScriptQuery === 'getCurrentDomain') {
+      sendResponse({ currentDomain: currentDomain[`currentDomain-${sender.tab.id}`] });
+    }
+
     if (request.contentScriptQuery === 'signInAnon') {
       firebase.auth().signInAnonymously()
         .then(user => sendResponse({ user }))
