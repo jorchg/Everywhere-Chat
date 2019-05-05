@@ -1,6 +1,7 @@
 import * as firebase from 'firebase/app';
 import config from '../../config/index';
 import Firebase from '../js/helpers/firebase';
+import Firestore from '../js/helpers/firestore';
 
 // Add the Firebase products that you want to use
 import 'firebase/auth';
@@ -9,6 +10,8 @@ import 'firebase/auth';
 firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
 // const firebase = new Firebase();
+const firestore = new Firestore();
+
 const domain = config.firebase.hosting.domain;
 
 function sendMessageToAll(message) {
@@ -143,5 +146,75 @@ chrome.runtime.onMessage.addListener(
         .catch(error => sendResponse({ error }));
     }
 
+    if (request.contentScriptQuery === 'getOrCreateRoom') {
+      const { name, domain } = request;
+      const data = {
+        domain,
+        name,
+      };
+      firestore.searchRoom(data)
+        .then((roomSnap) => {
+          if (roomSnap.empty) {
+            const roomData = {
+              ...data,
+              users: 0,
+              messages: 0,
+              connected: 0,
+              createdAt: new Date(),
+            };
+            firestore.setRoom(roomData)
+              .then((newRoomRef) => {
+                newRoomRef.get()
+                  .then((newRoom) => {
+                    const room = newRoom.data();
+                    sendResponse({
+                      uid: newRoomRef.id,
+                      ...room,
+                    });
+                  });
+              });
+          } else {
+            sendResponse({
+              uid: roomSnap.docs[0].id,
+              ...roomSnap.docs[0].data(),
+            });
+          }
+        })
+    }
+
+    if (request.contentScriptQuery === 'addMessage') {
+      const { room, user, message } = request;
+      firestore.addMessage({ room, user, message })
+        .then((written) => {
+          sendResponse('ok');
+        });
+    }
+
     return true;
   });
+
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name === 'messageChan') {
+    port.onMessage.addListener((message) => {
+      if (message.action === 'initSync') {
+        firestore.initMessagesSnapshot({
+          room: {
+            uid: message.room.uid,
+          },
+        }, (snapshot) => {
+          const docs = snapshot.docChanges().map((doc) => {
+            const message = doc.doc.data();
+            message['uid'] = doc.id;
+            return {
+              message,
+              type: doc.type,
+              oldIndex: doc.oldIndex,
+              newIndex: doc.newIndex,
+            }
+          });
+          port.postMessage({ data: docs });
+        });
+      }
+    });
+  }
+});

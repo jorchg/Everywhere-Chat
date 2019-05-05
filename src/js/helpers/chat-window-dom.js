@@ -1,14 +1,18 @@
 import throttle from 'lodash/throttle';
 import Dom from './dom';
 import Firebase from './firebase';
+import Firestore from './firestore';
 import config from '../../../config/index';
+import { DH_CHECK_P_NOT_PRIME } from 'constants';
 
 export default class ChatWindowDom extends Dom {
-  constructor(html, domain, firebaseUser) {
+  constructor(html, domain, firebaseUser, room) {
     super();
     this.firebaseUser = firebaseUser;
     this.firebase = new Firebase();
+    this.firestore = new Firestore();
     this.html = html;
+    this.room = room;
     this.currentDomain = domain;
     this.globalDom = new Dom(document.querySelector('html'));
     this.messageArea = this.html.querySelector('.message-area');
@@ -27,10 +31,6 @@ export default class ChatWindowDom extends Dom {
   }
 
   async init() {
-    // this.firebase.setEmailLinkListener()
-    //   .then(response => this.triggerEmaiLinked(response))
-    //   .catch(error => this.triggerEmailLinkError(error));
-
     this.textArea.focus();
     this.html
       .querySelector('.chat-toggle')
@@ -76,22 +76,33 @@ export default class ChatWindowDom extends Dom {
       } else if ((action === 'linkAndRetrieveDataWithCredential') && (status === 'error')) {
         this.triggerEmailLinkError();
       } else if ((action === 'updateUserDisplayName') && (status === 'ok')) {
-        this.username = data.user.displayName;
+        this.firebaseUser = data;
+        this.username = data.displayName;
         this.setChatEnabled();
         this.navbarUsername.innerText = `Logged in as: ${this.username}`;
       }
     });
+
+    this.firestore.connectToListener({
+      room: {
+        uid: this.room.uid,
+      },
+    }, (snapshot) => {
+      snapshot.data.forEach((message) => {
+        this.addMessageToList(message.message.text, message.message.author);
+      });
+    });
   }
 
-  chatToggle(event) {
+  chatToggle(event = null) {
     this.html.classList.toggle('visible');
-    event.stopPropagation();
+    if (event) event.stopPropagation();
   }
 
-  togglePinned(event) {
+  togglePinned(event = null) {
     this.html.classList.toggle('pinned');
     this.toggleGlobalMargin();
-    event.stopPropagation();
+    if (event) event.stopPropagation();
   }
 
   toggleGlobalMargin() {
@@ -146,7 +157,17 @@ export default class ChatWindowDom extends Dom {
 
   sendMessage(message = null) {
     if (!message) return;
-    this.addMessageToList(message, this.username);
+    this.firestore.sendMessage({
+      user: this.firebaseUser,
+      message: {
+        text: message,
+        sentAt: new Date(),
+        author: this.firebaseUser.displayName,
+        authorUid: this.firebaseUser.uid,
+      },
+      room: this.room,
+    });
+    // this.addMessageToList(message, this.username);
   }
 
   async tryUsername(username = null) {
@@ -188,11 +209,9 @@ export default class ChatWindowDom extends Dom {
       this.controlMessageInput.classList.add('is-loading');
       this.textArea.disabled = true;
       this.sendButton.setAttribute('disabled', true);
-      console.log('Setting username: ' + this.textArea.value);
       this.tryUsername(this.textArea.value);
       this.clearTextAreaOnEnter(event);
     } else if ((event.type === 'click') && (this.chatEnabled)) {
-      console.log('Sending message: ', this.textArea.value);
       this.sendMessage(this.textArea.value);
       this.clearTextAreaOnEnter(event);
     }
@@ -204,11 +223,9 @@ export default class ChatWindowDom extends Dom {
       this.controlMessageInput.classList.add('is-loading');
       this.textArea.disabled = true;
       this.sendButton.setAttribute('disabled', true);
-      console.log('Setting username: ' + this.textArea.value);
       this.tryUsername(this.textArea.value);
       this.clearTextAreaOnEnter(event);
     } else if ((code === 13) && (this.chatEnabled)) {
-      console.log('Sending message: ', this.textArea.value);
       this.sendMessage(this.textArea.value);
       this.clearTextAreaOnEnter(event);
     }
@@ -264,6 +281,7 @@ export default class ChatWindowDom extends Dom {
       true :
       false;
     if (isOurLanding) {
+      if (!this.html.classList.contains('visible')) this.chatToggle();
       const background = document.querySelector('#page-wrapper');
       const text = document.querySelector('.hero');
       const loader = document.querySelector('.loader');

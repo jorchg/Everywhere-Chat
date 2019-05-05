@@ -10,7 +10,6 @@ firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
 export default class Firebase {
   constructor() {
-    // return firebase;
     return this;
   }
 
@@ -50,12 +49,10 @@ export default class Firebase {
         } else if ((request.action === 'linkAndRetrieveDataWithCredential') && (request.status === 'error')) {
           callback({ action: request.action, status: 'error', data: request.data.user.displayName });
         } else if ((request.action === 'updateUserDisplayName') && (request.status === 'ok')) {
-          const data = {
-            user: {
-              displayName: request.data.user.displayName,
-            },
-          };
-          callback({ action: request.action, status: 'ok', data });
+          this.getCurrentUser()
+            .then((user) => {
+              callback({ action: request.action, status: 'ok', data: user });
+            });
         }
       });
   }
