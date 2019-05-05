@@ -12,20 +12,38 @@ import '../css/global.scss';
     
     async create() {
       this.firebase = new Firebase();
-      try {
-        this.firebaseUser = await this.firebase.signInAnon();
-        console.log(this.firebaseUser);
-      } catch (e) {
-        this.firebaseUser = null;
-      }
-      chrome.storage.local.get(['currentDomain'], async (result) => {
-        this.currentDomain = result.currentDomain;
-        const url = chrome.extension.getURL('chat-window.html');
-        const cssUrl = chrome.extension.getURL('css/global.css');
-        const chatWindowHtml = await this.getHTML(url);
-        const css = await this.getHTML(cssUrl);
-        this.injectHTML(chatWindowHtml, css);
-      });
+      // await this.firebase.signOut();
+      // debugger;
+
+      this.firebase.getCurrentUser()
+        .then(async (user) => {
+          if (!user) {
+            try {
+              this.firebaseUser = (await this.firebase.signInAnon()).user;
+              chrome.storage.local.get(['currentDomain'], async (result) => {
+                this.currentDomain = result.currentDomain;
+                const url = chrome.extension.getURL('chat-window.html');
+                const cssUrl = chrome.extension.getURL('css/global.css');
+                const chatWindowHtml = await this.getHTML(url);
+                const css = await this.getHTML(cssUrl);
+                this.injectHTML(chatWindowHtml, css);
+              });
+            } catch (e) {
+              this.firebaseUser = null;
+            }
+          } else {
+            this.firebaseUser = user;
+            chrome.storage.local.get(['currentDomain'], async (result) => {
+              this.currentDomain = result.currentDomain;
+              const url = chrome.extension.getURL('chat-window.html');
+              const cssUrl = chrome.extension.getURL('css/global.css');
+              const chatWindowHtml = await this.getHTML(url);
+              const css = await this.getHTML(cssUrl);
+              this.injectHTML(chatWindowHtml, css);
+            });
+          }
+        });
+
     };
 
     async getHTML(url = null) {

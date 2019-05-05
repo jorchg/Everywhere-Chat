@@ -1,6 +1,17 @@
+import * as firebase from 'firebase/app';
+import config from '../../../config/index';
+
+// Add the Firebase products that you want to use
+import 'firebase/auth';
+import 'firebase/firestore';
+
+firebase.initializeApp(config.firebase);
+firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
 export default class Firebase {
   constructor() {
-
+    // return firebase;
+    return this;
   }
 
   async signInAnon() {
@@ -26,13 +37,45 @@ export default class Firebase {
     });
   }
 
+  async setUserListener() {
+    return new Promise((fulfill, reject) => {
+      firebase.auth().onAuthStateChanged((user) => {
+        return fulfill(user);
+      });
+    });
+  }
+
+  setMessageListener(callback) {
+    chrome.runtime.onMessage.addListener(
+      (request, sender, sendResponse) => {
+        if ((request.action === 'linkAndRetrieveDataWithCredential') && (request.status === 'ok')) {
+          callback({ status: 'ok' });
+        } else if ((request.action === 'linkAndRetrieveDataWithCredential') && (request.status === 'error')) {
+          callback({ status: 'error' });
+        }
+      });
+  }
+
   getCurrentUser() {
     return new Promise((fulfill, reject) => {
       chrome.runtime.sendMessage({
         contentScriptQuery: 'getCurrentUser',
       }, response => {
-        if (!response) return fulfill(null);
+        if (!response || !response.user) return fulfill(null);
         if (response.user) return fulfill(response.user);
+      });
+    });
+  }
+
+  async signInWithEmailLink(email = null) {
+    return new Promise((fulfill, reject) => {
+      chrome.runtime.sendMessage({
+        contentScriptQuery: 'signInEmailLink',
+        email,
+      }, response => {
+        if (!response) return fulfill();
+        if (response.error) return reject(response.error);
+        return fulfill(response);
       });
     });
   }
@@ -44,6 +87,20 @@ export default class Firebase {
       }, response => {
         if (response.error) return reject(new Error('Operation invalid'));
         return fulfill(true);
+      });
+    });
+  }
+
+  async setEmailLinkListener() {
+    return new Promise((fulfill, reject) => {
+      chrome.runtime.onMessage.addListener(
+        (request, sender, sendResponse) => {
+          if ((request.action === 'linkAndRetrieveDataWithCredential') && (request.status === 'ok')) {
+            return fulfill('sucess');
+          } else if ((request.action === 'linkAndRetrieveDataWithCredential') && (request.status === 'error')) {
+            return reject('error');
+          }
+          return true;
       });
     });
   }

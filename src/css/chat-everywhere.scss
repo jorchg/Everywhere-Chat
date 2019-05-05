@@ -126,9 +126,9 @@ div, p, span, h1, h2, h3, h4, h5, h6 {
     padding-bottom: 20px;
     
     nav.panel {
-      flex-direction: column;
-      justify-content: flex-end;
       display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
       overflow-y: scroll;
       height: 100%;
 
@@ -136,25 +136,37 @@ div, p, span, h1, h2, h3, h4, h5, h6 {
         font-size: 12px;
       }
     }
+    nav.panel > :first-child {
+      margin-top: auto;
+    }
   }
 
   .notification {
     text-align: center;
 
-    .form-wrap {
-      display: flex; 
-      align-items: baseline;
+    &.notification-login {
+      display: none;
+      .form-wrap {
+        display: flex; 
+        align-items: flex-end;
+        justify-content: space-evenly;
 
-      .email-input {
-        margin-top: 5px;
-        margin-right: 5px;
-        font-size: 12px;
-      }
-
-      .button {
-        font-size: 12px;
+        .control {
+          width: 100%;
+          margin-right: 10px;
+          .email-input {
+            margin-top: 5px;
+            margin-right: 5px;
+            font-size: 12px;
+          }
+        }
+  
+        .button {
+          font-size: 12px;
+        }
       }
     }
+
 
   }
 

@@ -1,6 +1,7 @@
 import throttle from 'lodash/throttle';
 import Dom from './dom';
 import Firebase from './firebase';
+import config from '../../../config/index';
 
 export default class ChatWindowDom extends Dom {
   constructor(html, domain, firebaseUser) {
@@ -15,11 +16,21 @@ export default class ChatWindowDom extends Dom {
     this.textArea = this.html.querySelector('#text-message-input');
     this.controlMessageInput = this.html.querySelector('.control.message-input');
     this.sendButton = this.controlMessageInput.querySelector('a.button');
-    this.alert = this.html.querySelector('.notification-warning');
+    this.userAlert = this.html.querySelector('.notification-username');
+    this.loginAlert = this.html.querySelector('.notification-login');
+    this.loginControl = this.loginAlert.querySelector('.control');
+    this.loginAlertInput = this.loginAlert.querySelector('input');
+    this.loginAlertButton = this.loginAlert.querySelector('a.button');
+    this.navbarUser = this.html.querySelector('.navbar-user');
+    this.navbarUsername = this.navbarUser.querySelector('span');
     this.init();
   }
 
   async init() {
+    // this.firebase.setEmailLinkListener()
+    //   .then(response => this.triggerEmaiLinked(response))
+    //   .catch(error => this.triggerEmailLinkError(error));
+
     this.textArea.focus();
     this.html
       .querySelector('.chat-toggle')
@@ -39,8 +50,14 @@ export default class ChatWindowDom extends Dom {
       .querySelector('#text-message-input')
       .addEventListener('keypress', this.onKeyPressed.bind(this));
 
-    const user = await this.getCurrentUser();
-    const { displayName, email } = user;
+    this.loginAlertInput
+      .addEventListener('input', this.processLoginInput.bind(this));
+    this.loginAlertInput
+      .addEventListener('keypress', this.onLoginInputKeyPressed.bind(this));
+    this.loginAlertButton
+      .addEventListener('click', this.processLoginInput.bind(this));
+
+    const { displayName } = this.firebaseUser;
     if (!displayName) {
       this.setChatDisabled({ reason: 'You must set a username first' });
     } else {
@@ -50,18 +67,16 @@ export default class ChatWindowDom extends Dom {
         .querySelector('span')
         .innerText = `Logged in as: ${displayName}`;
       this.setChatEnabled();
-      if (!email) {
-        this.alert.innerHTML = `
-          Save your username by <strong>login in</strong>
-          <div class="form-wrap">
-            <input class="input email-input" type="text" placeholder="Email">
-            <a class="button is-primary">Login</a>
-          </div>
-        `;
-        this.alert.style.display = 'block';
-      }
     }
     this.sendButton.addEventListener('click', this.processTextArea.bind(this));
+
+    this.firebase.setMessageListener(({ status }) => {
+      if (status === 'ok') {
+        this.triggerEmailLinked(); 
+      } else if (status === 'error') {
+        this.triggerEmailLinkError();
+      }
+    });
   }
 
   chatToggle(event) {
@@ -93,14 +108,6 @@ export default class ChatWindowDom extends Dom {
     }
   }
 
-  async getCurrentUser() {
-    return new Promise(async (fulfill, reject) => {
-      const username = await this.firebase.getCurrentUser();
-      if (!username) return fulfill(null);
-      return fulfill(username);
-    });
-  }
-
   setChatDisabled({ reason }) {
     this.chatEnabled = false;
     this.textArea.rows = 1;
@@ -109,12 +116,16 @@ export default class ChatWindowDom extends Dom {
 
   setChatEnabled() {
     this.chatEnabled = true;
-    this.alert.style.display = 'none';
+    this.userAlert.style.display = 'none';
     this.sendButton.innerText = 'Send';
     this.textArea.placeholder = 'Write a message...';
     this.textArea.setAttribute('maxlength', '600');
     this.textArea.rows = 2;
     this.textArea.focus();
+
+    if (!this.firebaseUser.email) {
+      this.loginAlert.style.display = 'block';
+    }
   }
 
   addMessageToList(message = null, author = null) {
@@ -138,14 +149,11 @@ export default class ChatWindowDom extends Dom {
   async tryUsername(username = null) {
     if (!username) return;
 
-    // Do things
-    setTimeout(async () => {
-      await this.setUsername(username);
-      this.controlMessageInput.classList.remove('is-loading');
-      this.textArea.disabled = false;
-      this.sendButton.removeAttribute('disabled');
-      this.setChatEnabled();
-    }, 2000);
+    await this.setUsername(username);
+    this.controlMessageInput.classList.remove('is-loading');
+    this.textArea.disabled = false;
+    this.sendButton.removeAttribute('disabled');
+    this.setChatEnabled();
   }
 
   clearTextAreaOnEnter(event) {
@@ -201,6 +209,93 @@ export default class ChatWindowDom extends Dom {
       console.log('Sending message: ', this.textArea.value);
       this.sendMessage(this.textArea.value);
       this.clearTextAreaOnEnter(event);
+    }
+  }
+
+  checkEmail(email = null) {
+    const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return re.test(String(email).toLowerCase());
+  }
+
+  async tryLogin(email = null) {
+    if (!email) return false;
+    this.loginControl.classList.add('is-loading');
+    this.loginAlertInput.disabled = true;
+    this.loginAlertButton.setAttribute('disabled', true);
+    const response = await this.firebase.signInWithEmailLink(email);
+    if (response) {
+      this.loginAlert.querySelector('.form-wrap').remove();
+      this.loginAlert.innerText = `Check your email inbox :)`;
+    }
+  }
+
+  processLoginInput(event) {
+    const isEmailValid = this.checkEmail(this.loginAlertInput.value);
+    if (!isEmailValid && this.loginAlertInput.value !== '') {
+      this.loginAlertInput.classList.add('is-danger');
+      this.loginAlertButton.setAttribute('disabled', true);
+    } else if (isEmailValid) {
+      this.loginAlertInput.classList.remove('is-danger');
+      this.loginAlertButton.removeAttribute('disabled');
+    } else if (this.loginAlertInput.value === '') {
+      this.loginAlertButton.setAttribute('disabled', true);
+      this.loginAlertInput.classList.remove('is-danger');
+    }
+
+    if ((event.type === 'click') && (isEmailValid)) {
+      this.tryLogin(this.loginAlertInput.value);
+    }
+  }
+
+  onLoginInputKeyPressed(event) {
+    const code = (event.keyCode ? event.keyCode : event.which);
+    const isEmailValid = this.checkEmail(this.loginAlertInput.value);
+
+    if ((code === 13) && (isEmailValid)) {
+      this.tryLogin(this.loginAlertInput.value);
+    }
+  }
+
+  triggerEmailLinked(response) {
+    this.loginAlert.remove();
+    const isOurLanding = (window.location.href.includes(config.firebase.hosting.domain)) ?
+      true :
+      false;
+    if (isOurLanding) {
+      const background = document.querySelector('#page-wrapper');
+      const text = document.querySelector('.hero');
+      const loader = document.querySelector('.loader');
+
+      loader.remove();
+      text.innerText = 'Signed In!';
+      background.style.transition = 'background-color 500ms linear';
+      background.style.backgroundColor = '#29b956';
+    }
+
+    if (!this.chatEnabled) {
+      this.chatEnabled = true;
+      this.setChatEnabled();
+    }
+  }
+
+  triggerEmailLinkError(error) {
+    this.loginAlertInput.classList.remove('is-loading');
+    this.loginAlertInput.classList.add('is-danger');
+    this.loginAlertInput.disabled = false;
+    this.loginAlertButton.removeAttribute('disabled');
+
+    const isOurLanding = (window.location.href.includes(config.firebase.hosting.domain)) ?
+      true :
+      false;
+    if (isOurLanding) {
+      const background = document.querySelector('#page-wrapper');
+      const text = document.querySelector('.hero');
+      const loader = document.querySelector('.loader');
+
+      loader.remove();
+      text.innerText = 'An error has occured :( Please try again later';
+      background.style.transition = 'background-color 500ms linear';
+      background.style.backgroundColor = '#ce6270';
     }
   }
 }
