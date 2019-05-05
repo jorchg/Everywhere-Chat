@@ -145,8 +145,14 @@ export default class ChatWindowDom extends Dom {
   addMessageToList(message = null, author = null) {
     if (!message || !author) return;
     const newMessage = document.createElement('div');
+    const authorSpan = document.createElement('span');
+    const messageSpan = document.createElement('span');
+    authorSpan.style.fontWeight = '700';
+    newMessage.appendChild(authorSpan);
+    newMessage.appendChild(messageSpan);
     newMessage.classList.add('panel-block');
-    newMessage.innerText = `${author}: ${message}`;
+    authorSpan.innerText = author + ':' + ' ';
+    messageSpan.innerText = ' ' + message;
     this.panelMessageArea.appendChild(newMessage);
     this.panelMessageArea.scrollTo(0, this.panelMessageArea.scrollHeight);
   }
