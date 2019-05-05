@@ -30,10 +30,7 @@ export default class Firebase {
       chrome.runtime.sendMessage({
         contentScriptQuery: 'updateUserDisplayName',
         displayName,
-      }, response => {
-        if (!response) return reject(new Error('Operation invalid'));
-        return fulfill(response);
-      })
+      }, response => fulfill());
     });
   }
 
@@ -49,9 +46,16 @@ export default class Firebase {
     chrome.runtime.onMessage.addListener(
       (request, sender, sendResponse) => {
         if ((request.action === 'linkAndRetrieveDataWithCredential') && (request.status === 'ok')) {
-          callback({ status: 'ok' });
+          callback({ action: request.action, status: 'ok', data: request.data });
         } else if ((request.action === 'linkAndRetrieveDataWithCredential') && (request.status === 'error')) {
-          callback({ status: 'error' });
+          callback({ action: request.action, status: 'error', data: request.data.user.displayName });
+        } else if ((request.action === 'updateUserDisplayName') && (request.status === 'ok')) {
+          const data = {
+            user: {
+              displayName: request.data.user.displayName,
+            },
+          };
+          callback({ action: request.action, status: 'ok', data });
         }
       });
   }

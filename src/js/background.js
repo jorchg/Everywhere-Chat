@@ -30,14 +30,18 @@ function checkEmailLink(email, emailLink) {
         sendMessageToAll({
           action: 'linkAndRetrieveDataWithCredential',
           status: 'ok',
-          user: usercred.user,
+          data: {
+            user: usercred.user
+          },
         });
       })
       .catch((error) => {
         sendMessageToAll({
           action: 'linkAndRetrieveDataWithCredential',
           status: 'error',
-          error,
+          data: {
+            error,
+          },
         });
       });
   }
@@ -80,8 +84,28 @@ chrome.runtime.onMessage.addListener(
       firebase.auth().currentUser.updateProfile({
         displayName: request.displayName,
       })
-        .then(_ => sendResponse({ displayName: request.displayName }))
-        .catch(error => sendResponse({ error }));
+        .then((_) => {
+          sendResponse('ok');
+          sendMessageToAll({
+            action: 'updateUserDisplayName',
+            status: 'ok',
+            data: {
+              user: {
+                displayName: request.displayName,
+              },
+            },
+          });
+        })
+        .catch((error) => {
+          sendResponse('error');
+          sendMessageToAll({
+            action: 'updateUserDisplayName',
+            status: 'error',
+            data: {
+              error,
+            },
+          });
+        });
     }
 
     if (request.contentScriptQuery === 'getCurrentUser') {

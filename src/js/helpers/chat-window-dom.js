@@ -70,11 +70,15 @@ export default class ChatWindowDom extends Dom {
     }
     this.sendButton.addEventListener('click', this.processTextArea.bind(this));
 
-    this.firebase.setMessageListener(({ status }) => {
-      if (status === 'ok') {
+    this.firebase.setMessageListener(({ action, status, data }) => {
+      if ((action === 'linkAndRetrieveDataWithCredential') && (status === 'ok')) {
         this.triggerEmailLinked(); 
-      } else if (status === 'error') {
+      } else if ((action === 'linkAndRetrieveDataWithCredential') && (status === 'error')) {
         this.triggerEmailLinkError();
+      } else if ((action === 'updateUserDisplayName') && (status === 'ok')) {
+        this.username = data.user.displayName;
+        this.setChatEnabled();
+        this.navbarUsername.innerText = `Logged in as: ${this.username}`;
       }
     });
   }
@@ -100,8 +104,7 @@ export default class ChatWindowDom extends Dom {
   async setUsername(username = null) {
     if (!username) return false;
     try {
-      const response = await this.firebase.updateUserDisplayName(username);
-      this.username = response.displayName;
+      await this.firebase.updateUserDisplayName(username);
     } catch (e) {
       console.error('Error setting username: ', e);
       return;
@@ -153,7 +156,6 @@ export default class ChatWindowDom extends Dom {
     this.controlMessageInput.classList.remove('is-loading');
     this.textArea.disabled = false;
     this.sendButton.removeAttribute('disabled');
-    this.setChatEnabled();
   }
 
   clearTextAreaOnEnter(event) {
