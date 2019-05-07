@@ -2,8 +2,7 @@ import throttle from 'lodash/throttle';
 import Dom from './dom';
 import Firebase from './firebase';
 import Firestore from './firestore';
-import config from '../../../config/index';
-import { DH_CHECK_P_NOT_PRIME } from 'constants';
+import secrets from 'secrets';
 
 export default class ChatWindowDom extends Dom {
   constructor(html, domain, firebaseUser, room) {
@@ -294,7 +293,7 @@ export default class ChatWindowDom extends Dom {
 
   triggerEmailLinked(response) {
     this.loginAlert.remove();
-    const isOurLanding = (window.location.href.includes(config.firebase.hosting.domain)) ?
+    const isOurLanding = (window.location.href.includes(secrets.firebase.hosting.domain)) ?
       true :
       false;
     if (isOurLanding) {
@@ -321,7 +320,7 @@ export default class ChatWindowDom extends Dom {
     this.loginAlertInput.disabled = false;
     this.loginAlertButton.removeAttribute('disabled');
 
-    const isOurLanding = (window.location.href.includes(config.firebase.hosting.domain)) ?
+    const isOurLanding = (window.location.href.includes(secrets.firebase.hosting.domain)) ?
       true :
       false;
     if (isOurLanding) {
