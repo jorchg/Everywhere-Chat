@@ -1,11 +1,11 @@
 import * as firebase from 'firebase/app';
-import config from '../../../config/index';
+import secrets from 'secrets';
 
 // Add the Firebase products that you want to use
 import 'firebase/auth';
 import 'firebase/firestore';
 
-firebase.initializeApp(config.firebase);
+firebase.initializeApp(secrets.firebase);
 firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
 export default class Firebase {

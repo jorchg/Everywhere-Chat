@@ -1,8 +1,6 @@
 import * as firebase from 'firebase/app';
-import config from '../../../config/index';
 
 import 'firebase/firestore';
-import { DH_CHECK_P_NOT_PRIME } from 'constants';
 
 export default class Firestore {
   constructor() {

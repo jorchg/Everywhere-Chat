@@ -1,18 +1,13 @@
 import * as firebase from 'firebase/app';
-import config from '../../config/index';
-import Firebase from '../js/helpers/firebase';
+import secrets from 'secrets'
 import Firestore from '../js/helpers/firestore';
 
-// Add the Firebase products that you want to use
 import 'firebase/auth';
-// import 'firebase/firestore';
-// firebase.initializeApp(config.firebase);
 firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
-// const firebase = new Firebase();
 const firestore = new Firestore();
 
-const domain = config.firebase.hosting.domain;
+const domain = secrets.firebase.hosting.domain;
 
 function sendMessageToAll(message) {
   chrome.tabs.query({ currentWindow: true }, (tabs) => {
@@ -124,7 +119,10 @@ chrome.runtime.onMessage.addListener(
 
     if (request.contentScriptQuery === 'signOut') {
       firebase.auth().signOut()
-        .then(_ => sendResponse({ message: 'logged out' }))
+        .then((_) => {
+          chrome.runtime.reload();
+          return sendResponse({ message: 'logged out' });
+        })
         .catch(error => sendResponse({ error }));
     }
 
