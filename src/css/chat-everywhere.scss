@@ -1,3 +1,4 @@
+
 div, p, span, h1, h2, h3, h4, h5, h6 {
   font-family: $family-sans-serif;
 }
@@ -23,7 +24,7 @@ div, p, span, h1, h2, h3, h4, h5, h6 {
   padding-left: 10px;
 
   .chat-toggle {
-    background-color: rgb(242, 245, 247);
+    background-color: #7F0CFE;
     box-shadow: rgba(118, 118, 118, 0.11) 2px 0px 5px 0px;
     opacity: 1;
     height: auto;
@@ -35,17 +36,16 @@ div, p, span, h1, h2, h3, h4, h5, h6 {
     width: 30px;
     z-index: 1000000001;
     cursor: pointer;
-    border-radius: 0px 4px 4px 0px;
+    border-radius: 5px 0px 0px 5px;
     border-width: 1px 1px 1px;
     border-style: solid solid solid none;
-    border-color: rgb(224, 228, 231) rgb(224, 228, 231) rgb(224, 228, 231);
     border-image: initial;
     border-left: none;
     padding: 6px;
     transition: right 0.25s ease-in 0.2s, opacity 0.35s ease-in 0.2s;
-  
+    
     > span {
-      color: rgb(15, 46, 71);
+      color: white;
       display: inline-block;
       font-size: 12px;
       left: -1px;
@@ -57,7 +57,7 @@ div, p, span, h1, h2, h3, h4, h5, h6 {
   }
 
   & .navbar {
-    background-color: $black-light;
+    background-color: #7F0CFE;
     width: 100%;
     height: 50px;
     position: absolute;
@@ -135,6 +135,10 @@ div, p, span, h1, h2, h3, h4, h5, h6 {
       .panel-block {
         font-size: 12px;
         border: 0;
+        align-items: flex-start;
+      }
+      .panel-block > :first-child {
+        margin-right: 5px;
       }
     }
     nav.panel > :first-child {
@@ -185,6 +189,7 @@ div, p, span, h1, h2, h3, h4, h5, h6 {
 }
 
 svg.caret-left {
+  color: white;
   width: 7px;
 }
 

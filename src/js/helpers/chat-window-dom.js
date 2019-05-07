@@ -49,9 +49,14 @@ export default class ChatWindowDom extends Dom {
     this.html
       .querySelector('#text-message-input')
       .addEventListener('keypress', this.onKeyPressed.bind(this));
+    this.html
+      .querySelector('#text-message-input')
+      .addEventListener('keydown', this.onKeyPressed.bind(this));
 
     this.loginAlertInput
       .addEventListener('input', this.processLoginInput.bind(this));
+    this.loginAlertInput
+      .addEventListener('keydown', this.onLoginInputKeyPressed.bind(this));
     this.loginAlertInput
       .addEventListener('keypress', this.onLoginInputKeyPressed.bind(this));
     this.loginAlertButton
@@ -223,6 +228,10 @@ export default class ChatWindowDom extends Dom {
     }
   }
 
+  onKeyDown(event) {
+    event.stopPropagation();
+  }
+
   onKeyPressed(event) {
     const code = (event.keyCode ? event.keyCode : event.which);
     if ((code === 13) && (!this.chatEnabled)) {
@@ -235,6 +244,7 @@ export default class ChatWindowDom extends Dom {
       this.sendMessage(this.textArea.value);
       this.clearTextAreaOnEnter(event);
     }
+    event.stopPropagation();
   }
 
   checkEmail(email = null) {
@@ -279,6 +289,7 @@ export default class ChatWindowDom extends Dom {
     if ((code === 13) && (isEmailValid)) {
       this.tryLogin(this.loginAlertInput.value);
     }
+    event.stopPropagation();
   }
 
   triggerEmailLinked(response) {
