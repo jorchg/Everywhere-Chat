@@ -29,6 +29,6 @@
   "dependencies": {
     "eslint": "^5.16.0",
     "firebase": "^5.11.1",
-    "lodash": "^4.17.11"
+    "lodash": "^4.17.21"
   }
 }
